@@ -4,6 +4,7 @@ const fs = require("fs");
 const { Jimp } = require("jimp");
 const sax = require("sax");
 const escape = require("escape-html");
+const CONFIG = require("./config.json");
 
 const cookie = process.argv[2];
 const FILETYPE = /(?<=\.)[^.]+$/;
@@ -34,7 +35,7 @@ class WebDAV extends webdav.VirtualFileSystem {
         try {
           for (const image of fs.readdirSync(imgdir + "/media")) {
             const body = new FormData();
-            body.set("dir_id", "37849");
+            body.set("dir_id", CONFIG.media_folder);
             body.set("upload_name", "file");
             let img = fs.readFileSync(imgdir + "/media/" + image);
             for (let imgBuf; img.length > MAX_SIZE; ) {
@@ -49,7 +50,7 @@ class WebDAV extends webdav.VirtualFileSystem {
               }
             } = await (
               await fetch(
-                "https://lukas.edith-cms.de/ekiba/media/d/2739?action=file_uploadFile",
+                `${CONFIG.server}/media/d/2739?action=file_uploadFile`,
                 {
                   method: "POST",
                   headers: { cookie },
@@ -59,11 +60,15 @@ class WebDAV extends webdav.VirtualFileSystem {
             ).json();
             const { data: wlib } = await (
               await fetch(
-                "https://lukas.edith-cms.de/ekiba/media/d?action=file_createIntegrations",
+                `${CONFIG.server}/media/d?action=file_createIntegrations`,
                 {
                   method: "POST",
                   headers: { cookie, "Content-Type": "application/json" },
                   body: JSON.stringify({
+                    be_field: "beschreibung1",
+                    be_label: "Text",
+                    fk_elem: 2997,
+                    fk_object: CONFIG.media_object,
                     variants: [media]
                   })
                 }
