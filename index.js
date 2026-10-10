@@ -46,7 +46,7 @@ class WebDAV extends webdav.VirtualFileSystem {
             body.append("file", new File([img], image));
             const {
               data: {
-                upload: { fk_t172_media: media }
+                upload: { sys_pk: media }
               }
             } = await (
               await fetch(
@@ -58,6 +58,33 @@ class WebDAV extends webdav.VirtualFileSystem {
                 }
               )
             ).json();
+            const m = {
+              sys_pk: media,
+              name: image,
+              urheber: "Gemeindebrief",
+              urheber_pos: "mo",
+              focuspoint_x: 0,
+              focuspoint_y: 0,
+              sichtbar_jn: "on",
+              visible_date_from: "0000-00-00 00:00:00",
+              visible_date_to: "0000-00-00 00:00:00",
+              grossbild_popup_jn: "on",
+              display_as: "img",
+              anzahl_verwendungen: 0,
+              fk_elem: 0,
+              fk_object: 0
+            };
+            m[`image_output_as_${media}`] = image.match(FILETYPE)[0];
+            await (
+              await fetch(
+                `${CONFIG.server}/media/d/2739?action=image_saveMedia`,
+                {
+                  method: "POST",
+                  headers: { cookie },
+                  body: new URLSearchParams(m)
+                }
+              )
+            ).text();
             const { data: wlib } = await (
               await fetch(
                 `${CONFIG.server}/media/d?action=file_createIntegrations`,
