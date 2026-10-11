@@ -16,6 +16,7 @@
   "dependencies": {
     "escape-html": "^1.0.3",
     "jimp": "^1.6.1",
+    "mime": "^4.1.0",
     "sax": "^1.6.1",
     "webdav-server": "^2.6.2"
   }
