@@ -113,6 +113,7 @@ class WebDAV extends webdav.VirtualFileSystem {
       pandoc.stdout.on("data", function (chunk) {
         html += chunk.toString();
       });
+      pandoc.stderr.pipe(process.stderr);
       pandoc.on("exit", async function (code) {
         if (code === 0) {
           const images = {};
@@ -163,7 +164,7 @@ class WebDAV extends webdav.VirtualFileSystem {
               }
             })
             .end(`<html>${html}</html>`);
-        } else console.error(html);
+        }
       });
       callback(null, pandoc.stdin);
     }
