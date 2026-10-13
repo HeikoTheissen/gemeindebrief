@@ -18,7 +18,7 @@ async function uploadImg(imgBuf, imgName) {
   const body = new FormData();
   body.set("dir_id", CONFIG.media_folder);
   body.set("upload_name", "file");
-  for (let img; imgBuf.length > MAX_SIZE; ) {
+  for (let img; imgBuf.length > MAX_SIZE;) {
     img ??= await Jimp.fromBuffer(imgBuf);
     img.scale(0.9);
     imgBuf = await img.getBuffer(img.mime);
@@ -82,6 +82,8 @@ function refImg(id) {
 class WebDAV extends webdav.VirtualFileSystem {
   _openWriteStream(path, ctx, callback) {
     const type = path.fileName().match(FILETYPE)[0];
+    const filename =
+      __dirname + "/html/" + path.fileName().replace(FILETYPE, "html");
     if (mime.getType(type)?.startsWith("image/")) {
       const imgBuf = [];
       callback(
@@ -93,9 +95,7 @@ class WebDAV extends webdav.VirtualFileSystem {
           .on("end", async function () {
             if (imgBuf.length > 0)
               fs.writeFileSync(
-                __dirname +
-                  "/html/" +
-                  path.fileName().replace(FILETYPE, "html"),
+                filename,
                 refImg(await uploadImg(Buffer.concat(imgBuf), path.fileName()))
               );
           })
@@ -109,16 +109,14 @@ class WebDAV extends webdav.VirtualFileSystem {
           cwd: __dirname
         }
       );
-      const images = {};
-      const htmlfile = fs.createWriteStream(
-        __dirname + "/html/" + path.fileName().replace(FILETYPE, "html")
-      );
       let html = "";
-      pandoc.stdout
-        .on("data", function (chunk) {
-          html += chunk.toString();
-        })
-        .on("end", async function () {
+      pandoc.stdout.on("data", function (chunk) {
+        html += chunk.toString();
+      });
+      pandoc.on("exit", async function (code) {
+        if (code === 0) {
+          const images = {};
+          const htmlfile = fs.createWriteStream(filename);
           try {
             for (const image of fs.readdirSync(imgdir + "/media"))
               images[image] = await uploadImg(
@@ -130,7 +128,7 @@ class WebDAV extends webdav.VirtualFileSystem {
               force: true
             });
           } catch (e) {
-            if (e.code !== "ENOENT") throw e;
+            if (e.code !== "ENOENT") console.error(e);
           }
           sax
             .createStream(true)
@@ -165,7 +163,8 @@ class WebDAV extends webdav.VirtualFileSystem {
               }
             })
             .end(`<html>${html}</html>`);
-        });
+        } else console.error(html);
+      });
       callback(null, pandoc.stdin);
     }
   }
